@@ -3,12 +3,21 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../contexts/AuthProvider';
+import useToken from '../../hooks/useToken';
 
 const SignUp = () => {
     const { register, handleSubmit, formState: { errors } } = useForm();
     const { createUser, updateUser } = useContext(AuthContext);
     const [signUpError, setSignUpError] = useState('');
+
+    const [createdUserEmail, setCreatedUserEmail] = useState('');
+    const [token] = useToken(createdUserEmail);
+
     const navigate = useNavigate();
+
+    if (token) {
+        navigate('/');
+    }
 
     const handleSignUp = data => {
         console.log(data);
@@ -18,20 +27,39 @@ const SignUp = () => {
                 const user = result.user;
                 console.log(user);
                 toast('User Created Successfully.')
-                const userinfo = {
-                    displayInfo: data.name
+                const userInfo = {
+                    displayName: data.name
                 };
-                updateUser(userinfo)
+                console.log(userInfo);
+                updateUser(userInfo)
                     .then(() => {
-                        navigate('/')
+                        saveUser(data.name, data.email);
                     })
                     .catch(err => console.error(err))
             })
             .catch(err => {
                 console.error(err)
                 setSignUpError(err.message);
-            })
+            });
     };
+
+    const saveUser = (name, email) => {
+        const user = { name, email };
+        fetch('http://localhost:5000/users', {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify(user)
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log('save user', data);
+                setCreatedUserEmail(email);
+            })
+    }
+
+
 
     return (
         <div className='h-[800px] flex justify-center items-center'>
